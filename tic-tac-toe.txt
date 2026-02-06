@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infinite Tic‑Tac‑Toe</title>
+
+<style>
+body{
+  font-family:'Segoe UI',Tahoma,Verdana,sans-serif;
+  background:linear-gradient(135deg,#dbeafe,#f0f4f8);
+  display:flex;
+  justify-content:center;
+  padding:30px;
+}
+.game{
+  background:#fff;
+  padding:28px 32px;
+  border-radius:22px;
+  box-shadow:0 20px 45px rgba(0,0,0,.18);
+  text-align:center;
+}
+#board{
+  display:grid;
+  grid-template-columns:repeat(3,100px);
+  gap:14px;
+  margin:24px 0;
+}
+.cell{
+  width:100px;height:100px;
+  background:#f9fafb;
+  border-radius:18px;
+  border:2px solid #d1d5db;
+  font-size:48px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:.25s;
+}
+.cell:hover{
+  transform:scale(1.08);
+  box-shadow:0 10px 22px rgba(0,0,0,.18);
+}
+.x{color:#2563eb}
+.o{color:#16a34a}
+.fade{opacity:.35}
+.win{background:#fde047}
+#status{font-size:20px}
+#score{margin-top:10px;display:none}
+button{
+  padding:8px 18px;
+  margin:6px;
+  border:none;
+  border-radius:12px;
+  font-size:15px;
+  cursor:pointer;
+  background:#2563eb;
+  color:white;
+}
+button:hover{background:#1e40af}
+</style>
+</head>
+
+<body>
+<div class="game">
+  <h2>Infinite Tic‑Tac‑Toe</h2>
+  <div id="board"></div>
+  <div id="status">Player X's turn</div>
+  <div id="score">Score — X: 0 | O: 0</div>
+  <button id="reset">Reset Round</button>
+  <button id="toggleScore">Toggle Score</button>
+</div>
+
+<script>
+//scoreboard
+let board = Array(9).fill('');
+let moveOrder = [];
+let currentPlayer = 'X';
+let gameOver = false;
+let score = {X:0,O:0};
+let scoreOn = false;
+//all possible ways to win
+const wins=[
+ [0,1,2],[3,4,5],[6,7,8],
+ [0,3,6],[1,4,7],[2,5,8],
+ [0,4,8],[2,4,6]
+];
+
+const boardEl=document.getElementById('board');
+const statusEl=document.getElementById('status');
+const scoreEl=document.getElementById('score');
+
+function render(){
+  boardEl.innerHTML='';
+  board.forEach((v,i)=>{
+    const c=document.createElement('div');
+    c.className='cell';
+    if(v.startsWith('X'))c.classList.add('x');
+    if(v.startsWith('O'))c.classList.add('o');
+    if(v.endsWith('-fade'))c.classList.add('fade');
+    c.textContent=v.replace('-fade','');
+    c.onclick=()=>move(i);
+    boardEl.appendChild(c);
+  });
+}
+
+async function move(i){
+  if(gameOver) return;
+  if(board[i]) return;
+
+  // for fading oldest move
+  if(board.filter(v=>v).length === 7){
+    const old = moveOrder.shift();
+    board[old] += '-fade';
+    render();
+
+    await new Promise(r=>setTimeout(r,450));
+    if(gameOver) return;
+
+    board[old]='';
+    render();
+  }
+
+  board[i]=currentPlayer;
+  moveOrder.push(i);
+  render();
+
+  const win=checkWin();
+  if(win){
+    gameOver=true;
+    statusEl.textContent=`Player ${currentPlayer} wins!`;
+    win.forEach(i=>boardEl.children[i].classList.add('win'));
+    score[currentPlayer]++;
+    updateScore();
+    return;
+  }
+
+  currentPlayer=currentPlayer==='X'?'O':'X';
+  statusEl.textContent=`Player ${currentPlayer}'s turn`;
+}
+
+function checkWin(){
+  for(const [a,b,c] of wins){
+    const A=board[a]?.replace('-fade','');
+    const B=board[b]?.replace('-fade','');
+    const C=board[c]?.replace('-fade','');
+    if(A&&A===B&&A===C) return[a,b,c];
+  }
+  return null;
+}
+
+function updateScore(){
+  scoreEl.textContent=`Score — X: ${score.X} | O: ${score.O}`;
+}
+
+document.getElementById('reset').onclick=()=>{
+  board=Array(9).fill('');
+  moveOrder=[];
+  currentPlayer='X';
+  gameOver=false;
+  statusEl.textContent="Player X's turn";
+  render();
+};
+
+document.getElementById('toggleScore').onclick=()=>{
+  scoreOn=!scoreOn;
+  scoreEl.style.display=scoreOn?'block':'none';
+  if(scoreOn) updateScore();
+};
+
+render();
+</script>
+</body>
